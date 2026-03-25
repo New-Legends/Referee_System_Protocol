@@ -163,6 +163,7 @@ void Referee::init_referee_struct_data(){
     memset(&robot_hurt_t, 0, sizeof(ext_hurt_data_t));
     memset(&shoot_data_t, 0, sizeof(ext_shoot_data_t));
     memset(&projectile_allowance_t, 0, sizeof(ext_projectile_allowance_t));
+    memset(&rfid_status_t, 0, sizeof(ext_rfid_status_t));
 
 
     memset(&dart_client_cmd_t, 0, sizeof(ext_dart_client_cmd_t));
@@ -324,6 +325,11 @@ void Referee::referee_data_solve(uint8_t *frame)
             copy_referee_payload(&map_command, sizeof(map_command), frame + index, payload_size);
         }
         break;
+        case KEYBOARD_MOUSE_REMOTE_CONTROL_CMD_ID:
+        {
+            copy_referee_payload(&remote_control_t, sizeof(remote_control_t), frame + index, payload_size);
+        }
+        break;
 
         case MAP_ROBOT_DATA_CMD_ID:
         {
@@ -379,8 +385,8 @@ void Referee::get_robot_id(uint8_t *color)
 //底盘输出功率,底盘功率缓存
 void Referee::get_chassis_power_and_buffer(fp32 *power, fp32 *buffer)
 {
-//    *power = power_heat_data_t.chassis_power;
-//    *buffer = power_heat_data_t.chassis_power_buffer;
+   *power = power_heat_data_t.reserved_3;
+   *buffer = power_heat_data_t.buffer_energy;
 }
 
 //底盘输出功率,底盘功率缓存
@@ -419,15 +425,8 @@ void Referee::get_shooter_id1_17mm_cooling_limit_and_heat(uint16_t *id1_17mm_coo
 void Referee::get_shooter_id2_17mm_cooling_limit_and_heat(uint16_t *id2_17mm_cooling_limit, uint16_t *id2_17mm_cooling_heat)
 {
     *id2_17mm_cooling_limit = robot_status.shooter_barrel_heat_limit;
-
+    *id2_17mm_cooling_heat = 0;
 }
-
-// //17mm枪口枪口射速上限,17mm实时射速 默认ID1
-// void Referee::get_shooter_id1_17mm_speed_limit_and_bullet_speed(uint16_t *id1_17mm_speed_limit, fp32 *bullet_speed)
-// {
-//     *id1_17mm_speed_limit = robot_state.shooter_id1_17mm_speed_limit;
-//     *bullet_speed = shoot_data_t.bullet_speed;
-// }
 
 //17mm枪口热量冷却 默认ID1
 void Referee::get_shooter_id1_17mm_cooling_rate(uint16_t *id1_17mm_cooling_rate)
@@ -441,13 +440,6 @@ void Referee::get_shooter_id1_42mm_cooling_limit_and_heat(uint16_t *id1_42mm_coo
     *id1_42mm_cooling_limit = robot_status.shooter_barrel_heat_limit;
     *id1_42mm_cooling_heat = power_heat_data_t.shooter_id1_42mm_cooling_heat;
 }
-
-// //42mm枪口枪口射速上限,42mm实时射速
-// void Referee::get_shooter_id1_42mm_speed_limit_and_bullet_speed(uint16_t *id1_42mm_speed_limit, fp32 *bullet_speed)
-// {
-//     *id1_42mm_speed_limit = robot_state.shooter_id1_42mm_speed_limit;
-//     *bullet_speed = shoot_data_t.bullet_speed;
-// }
 
 //42mm枪口热量冷却
 void Referee::get_shooter_id1_42mm_cooling_rate(uint16_t *id1_42mm_cooling_rate)
@@ -547,5 +539,5 @@ void Referee::determine_ID(void)
 
 void Referee::leida_data_unpack(void)
 {
-    memcpy(&leida_data, student_interactive_data_t.user_data , sizeof(student_interactive_data_t.user_data));
+    memcpy(&leida_data, student_interactive_data_t.user_data, sizeof(leida_data));
 }
