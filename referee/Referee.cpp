@@ -23,6 +23,13 @@ extern UART_HandleTypeDef huart6;
 
 unpack_data_t referee_unpack_obj;
 
+static inline void copy_referee_payload(void *dst, size_t dst_size, const uint8_t *src, uint16_t payload_size)
+{
+    memset(dst, 0, dst_size);
+    size_t copy_size = (payload_size < dst_size) ? payload_size : dst_size;
+    memcpy(dst, src, copy_size);
+}
+
 void Referee::init(){
 
     init_referee_struct_data();
@@ -191,170 +198,166 @@ void Referee::referee_data_solve(uint8_t *frame)
 
     memcpy(&cmd_id, frame + index, sizeof(uint16_t));
     index += sizeof(uint16_t);
+    uint16_t payload_size = referee_receive_header.data_length;
 
     switch (cmd_id)
     {
         case GAME_STATE_CMD_ID:
         {
-            memcpy(&game_state, frame + index, sizeof(game_state));
+            copy_referee_payload(&game_state, sizeof(game_state), frame + index, payload_size);
         }
         break;
         case GAME_RESULT_CMD_ID:
         {
-            memcpy(&game_result, frame + index, sizeof(game_result));
+            copy_referee_payload(&game_result, sizeof(game_result), frame + index, payload_size);
         }
         break;
         case GAME_ROBOT_HP_CMD_ID:
         {
-            memcpy(&game_robot_HP_t, frame + index, sizeof(game_robot_HP_t));
+            copy_referee_payload(&game_robot_HP_t, sizeof(game_robot_HP_t), frame + index, payload_size);
         }
         break;
 
         case FIELD_EVENTS_CMD_ID:
         {
-            memcpy(&field_event, frame + index, sizeof(field_event));
+            copy_referee_payload(&field_event, sizeof(field_event), frame + index, payload_size);
         }
         break;
 
         case REFEREE_WARNING_CMD_ID:
         {
-            memcpy(&referee_warning_t, frame + index, sizeof(referee_warning_t));
+            copy_referee_payload(&referee_warning_t, sizeof(referee_warning_t), frame + index, payload_size);
         }
         break;
     
         case DART_REMAINING_TIME_CMD_ID:
         {
-            memcpy(&dart_remaining_time_t, frame + index, sizeof(dart_remaining_time_t));
+            copy_referee_payload(&dart_remaining_time_t, sizeof(dart_remaining_time_t), frame + index, payload_size);
         }
+        break;
 
         case ROBOT_STATE_CMD_ID:
         {
-            memcpy(&robot_status, frame + index, sizeof(robot_status));
+            copy_referee_payload(&robot_status, sizeof(robot_status), frame + index, payload_size);
         }
         break;
         case POWER_HEAT_DATA_CMD_ID:
         {
-            memcpy(&power_heat_data_t, frame + index, sizeof(power_heat_data_t));
+            copy_referee_payload(&power_heat_data_t, sizeof(power_heat_data_t), frame + index, payload_size);
         }
         break;
         case ROBOT_POS_CMD_ID:
         {
-            memcpy(&game_robot_pos_t, frame + index, sizeof(game_robot_pos_t));
+            copy_referee_payload(&game_robot_pos_t, sizeof(game_robot_pos_t), frame + index, payload_size);
         }
         break;
         case BUFF_MUSK_CMD_ID:
         {
-            memcpy(&buff_musk_t, frame + index, sizeof(buff_musk_t));
+            copy_referee_payload(&buff_musk_t, sizeof(buff_musk_t), frame + index, payload_size);
         }
         break;
 
         case ROBOT_HURT_CMD_ID:
         {
-            memcpy(&robot_hurt_t, frame + index, sizeof(robot_hurt_t));
+            copy_referee_payload(&robot_hurt_t, sizeof(robot_hurt_t), frame + index, payload_size);
         }
         break;
         case SHOOT_DATA_CMD_ID:
         {
-            memcpy(&shoot_data_t, frame + index, sizeof(shoot_data_t));
+            copy_referee_payload(&shoot_data_t, sizeof(shoot_data_t), frame + index, payload_size);
         }
         break;
         case BULLET_REMAINING_CMD_ID:
         {
-            memcpy(&projectile_allowance_t, frame + index, sizeof(projectile_allowance_t));
+            copy_referee_payload(&projectile_allowance_t, sizeof(projectile_allowance_t), frame + index, payload_size);
         }
         break;
         case RFID_STATUS_CMD_ID:
         {
-            memcpy(&rfid_status_t, frame + index, sizeof(rfid_status_t));
+            copy_referee_payload(&rfid_status_t, sizeof(rfid_status_t), frame + index, payload_size);
         }
         break;
 
 
         case DART_CLIENT_CMD_ID:
         {
-            memcpy(&dart_client_cmd_t, frame + index, sizeof(dart_client_cmd_t));
+            copy_referee_payload(&dart_client_cmd_t, sizeof(dart_client_cmd_t), frame + index, payload_size);
         }
         break;
         case GROUND_ROBOT_POSITION_CMD_ID:
         {
-            memcpy(&ground_robot_position_t, frame + index, sizeof(ground_robot_position_t));
+            copy_referee_payload(&ground_robot_position_t, sizeof(ground_robot_position_t), frame + index, payload_size);
         }
         break;
         case RADAR_MARK_DATA_CMD_ID:
         {
-            memcpy(&radar_mark_data_t, frame + index, sizeof(radar_mark_data_t));
+            copy_referee_payload(&radar_mark_data_t, sizeof(radar_mark_data_t), frame + index, payload_size);
         }
         break;
     
         case SENTRY_INFO_CMD_ID:
         {
-            memcpy(&sentry_info_t, frame + index, sizeof(sentry_info_t));
+            copy_referee_payload(&sentry_info_t, sizeof(sentry_info_t), frame + index, payload_size);
         }
         break;
         case RADAR_INFO_CMD_ID:
         {
-            memcpy(&radar_info_t, frame + index, sizeof(radar_info_t));
+            copy_referee_payload(&radar_info_t, sizeof(radar_info_t), frame + index, payload_size);
         }
         break;
 
         case STUDENT_INTERACTIVE_DATA_CMD_ID:
         {
-            memcpy(&student_interactive_data_t, frame + index, sizeof(student_interactive_data_t));
+            copy_referee_payload(&student_interactive_data_t, sizeof(student_interactive_data_t), frame + index, payload_size);
         }
         break;
 
 
         case ROBOT_INTERACTION_DATA_CMD_ID:
         {
-            memcpy(&custom_robot_data, frame + index, sizeof(custom_robot_data));
+            copy_referee_payload(&custom_robot_data, sizeof(custom_robot_data), frame + index, payload_size);
         }
         break;
 
         case MAP_COMMAND_CMD_ID:
         {
-            memcpy(&map_command, frame + index, sizeof(map_command));
-        }
-        break;
-
-        case KEYBOARD_MOUSE_REMOTE_CONTROL_CMD_ID:
-        {
-            memcpy(&remote_control_t, frame + index, sizeof(remote_control_t));
+            copy_referee_payload(&map_command, sizeof(map_command), frame + index, payload_size);
         }
         break;
 
         case MAP_ROBOT_DATA_CMD_ID:
         {
-            memcpy(&map_robot_data, frame + index, sizeof(map_robot_data));
+            copy_referee_payload(&map_robot_data, sizeof(map_robot_data), frame + index, payload_size);
         }
         break;
 
         case CUSTOM_CLIENT_DATA_CMD_ID:
         {
-            memcpy(&custom_client_data, frame + index, sizeof(custom_client_data));
+            copy_referee_payload(&custom_client_data, sizeof(custom_client_data), frame + index, payload_size);
         }
         break;
 
         case MAP_DATA_CMD_ID:
         {
-            memcpy(&map_data, frame + index, sizeof(map_data));
+            copy_referee_payload(&map_data, sizeof(map_data), frame + index, payload_size);
         }
         break;
 
         case CUSTOM_INFO_CMD_ID:
         {
-            memcpy(&custom_info, frame + index, sizeof(custom_info));
+            copy_referee_payload(&custom_info, sizeof(custom_info), frame + index, payload_size);
         }
         break;
 
         case ROBOT_CUSTOM_DATA_CMD_ID:
         {
-            memcpy(&robot_custom_data, frame + index, sizeof(robot_custom_data));
+            copy_referee_payload(&robot_custom_data, sizeof(robot_custom_data), frame + index, payload_size);
         }
         break;
 
         case ROBOT_CUSTOM_DATA_2_CMD_ID:
         {
-            memcpy(&robot_custom_data_2, frame + index, sizeof(robot_custom_data_2));
+            copy_referee_payload(&robot_custom_data_2, sizeof(robot_custom_data_2), frame + index, payload_size);
         }
         break;
 
