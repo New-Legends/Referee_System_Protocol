@@ -101,6 +101,7 @@ typedef struct
 #define RED 0
 #define BLUE 1
 
+//机器人ID
 typedef enum
 {
     RED_HERO = 1,
@@ -122,6 +123,7 @@ typedef enum
 } robot_id_t;
 
 
+//比赛状态
 typedef enum
 {
     PROGRESS_UNSTART = 0,
@@ -204,8 +206,8 @@ typedef __packed struct // 0x0101
             0：未占领/未激活
             1：已占领/已激活
             bit 0-2：
-            bit 0：己方与资源区区不重叠的补给区占领状态，1 为已占领
-            bit 1：己方与资源区重叠的补给区占领状态，1 为已占领
+            bit 0：己方补给区的占领状态，1 为已占领
+            bit 1：保留位
             bit 2：己方补给区的占领状态，1 为已占领（仅 RMUL 适用）
             bit 3-6：己方能量机关状态
             bit 3-4：己方小能量机关的激活状态，0 为未激活，1 为已激活，2 为正在激活
@@ -253,55 +255,23 @@ typedef __packed struct //0x104
 typedef __packed struct // 0x0105
 {
     /*dart_remaining_time:
-    0   1   飞镖发射口倒计时:15s 倒计时
+    0   1   己方飞镖发射剩余时间，单位：秒
     */
     uint8_t dart_remaining_time;
     /*bit 0-2：
             *最近一次己方飞镖击中的目标，开局默认为 0，1 为击中前哨站，2 为击中
-            *基地固定目标，3 为击中基地随机目标
+            *基地固定目标，3 为击中基地随机目标，4 为击中基地随机移动目标，5 为击中基地末端移动目标
             *bit 3-5：
             *对方最近被击中的目标累计被击中计数，开局默认为 0，至多为 4
-    1   2   *bit 6-7：
+    1   2   *bit 6-8：
             *字节偏移量 大小 说明
             *飞镖此时选定的击打目标，开局默认或未选定/选定前哨站时为 0，选中基
-            *地固定目标为 1，选中基地随机目标为 2
-            *bit 8-15：保留
+            *地固定目标为 1，选中基地随机目标为 2，选中基地随机移动目标为 3，选中基地末端移动目标为 4
+            *bit 9-15：保留
     */
     uint16_t dart_info;
     
 } ext_dart_info_t;
-
-
-
-
-
-
-typedef __packed struct // 0x0121
-{
-    /*雷达是否确认触发双倍易伤
-    *备注：开局为 0，修改此值即可请求触发双倍易伤，若此时雷达拥有触发双倍易伤的机会，则可触发。 此值的变化需要单调递增且每次仅能增加 1，否则视为不合法。 
-        示例：此值开局仅能为 0，此后雷达可将其从 0 修改至 1，若雷达拥有触发双倍易伤的机会，则触发双倍易伤。此后雷达可将其从 1 修改至 2，以此类推。 
-        若雷达请求双倍易伤时，双倍易伤正在生效，则第二次双倍易伤将在第一次双倍易伤结束后生效。
-    */
-    uint8_t radar_cmd; 
-    /*密钥更新或验证指令
-    *每个字节均为 ASCII 码编码的字母或数字。开局为随机值。byte1 为指令类型，byte2-7 为密钥值。
-    当 byte1 值为 1 时，修改此值即可更新己方加密密钥；当byte1 值为 2 时，修改此值即可将雷达破解的对方密钥传输给服务器以验证是否正确破解。 
- 
-    注意： 仅开局和每次对方破解成功使得加密等级（己方干扰波难度）提高时可以修改密钥，其余时间修改无效。 
-        当 byte1 值为 2 时，每次更新验证密钥后的 10 秒内，再次更新无效。 
-    */
-    uint8_t password_cmd; 
-    uint8_t password_1; 
-    uint8_t password_2; 
-    uint8_t password_3; 
-    uint8_t password_4; 
-    uint8_t password_5; 
-    uint8_t password_6;
-
-}ext_radar_cmd_t;
-
-
 
 
  
@@ -367,15 +337,15 @@ typedef __packed struct // 0x0202
     uint16_t reserved_2; 
     float reserved_3; 
     /*chassis_power_buffer:
-     * 底盘功率缓冲 单位 J 焦耳 备注：飞坡根据规则增加至 250J*/
+     * 底盘缓冲能量 单位 J 焦耳*/
     uint16_t buffer_energy;
-    /*shooter_id1_17mm_cooling_heat
-     * 第 1 个 17mm 发射机构的射击热量*/
-    uint16_t shooter_id1_17mm_cooling_heat;
+    /*shooter_17mm_barrel_heat
+     * 17mm 发射机构的射击热量*/
+    uint16_t shooter_17mm_barrel_heat;
 
-    /*shooter_id1_42mm_cooling_heat
+    /*shooter_42mm_barrel_heat
      * 42mm 枪口热量*/
-    uint16_t shooter_id1_42mm_cooling_heat;
+    uint16_t shooter_42mm_barrel_heat;
 
 } ext_power_heat_data_t;
 
@@ -416,9 +386,7 @@ typedef __packed struct // 0x0204
     机器人攻击增益（百分比，值为 50 表示 50%攻击增益）*/
     uint16_t attack_buff;
 
-    /*机器人剩余能量值反馈，以 16 进制标识机器人剩余能量值比例，
-    * 仅在机器人剩余能量小于 50%时反馈，其余默认反馈 0x80。机器人初始能
-    * 量视为 100% 
+    /*机器人剩余能量值反馈，以 16 进制标识机器人剩余能量值比例，机器人初始能量视为 100% 
     * bit 0：在剩余能量≥125%时为 1，其余情况为 0 
     * bit 1：在剩余能量≥100%时为 1，其余情况为 0 
     * bit 2：在剩余能量≥50%时为 1，其余情况为 0 
@@ -440,12 +408,9 @@ typedef __packed struct // 0x0206
      * bit 0-3：当扣血原因为装甲模块被弹丸攻击、受撞击或离线时，该 4 bit 组成的数值为装甲模块或测速模块的 ID 编号；当其他原因导致扣血时，该数值为 0 
      * hurt_type:
      * bit 4-7：血量变化类型
-     * 0x0 装甲伤害扣血
-     * 0x1 模块掉线扣血
-     * 0x2 超射速扣血
-     * 0x3 超枪口热量扣血
-     * 0x4 超底盘功率扣血
-     * 0x5 装甲撞击扣血
+        0：装甲模块被弹丸攻击导致扣血
+        1：装甲模块或超级电容管理模块离线导致扣血
+        5：装甲模块受到撞击导致扣血
      */
     uint8_t armor_id : 4; 
     uint8_t HP_deduction_reason : 4;
@@ -464,7 +429,7 @@ typedef __packed struct // 0x0207
     uint8_t bullet_type;
     /*shooter_id:
      *发射机构 ID：
-     * 1：1 号 17mm 发射机构
+     * 1：17mm 发射机构
      * 2：保留位
      * 3：42mm 发射机构
      */
@@ -500,6 +465,7 @@ typedef __packed struct //0x0208
 
 typedef __packed struct //0x0209
 {
+    //bit位值为1/0的含义：是否已检测到该增益点RFID卡
     /*rfid_status:
      *机器人 RFID 状态:
      * bit 0：己方基地增益点 
@@ -529,17 +495,22 @@ typedef __packed struct //0x0209
      * bit 24：对方堡垒增益点 
      * bit 25：对方前哨站增益点 
      * bit 26：己方地形跨越增益点（隧道）（靠近己方一侧公路区下方） 
-     * bit 27：己方地形跨越增益点（隧道）（靠近己方一侧公路区上方）
-     * bit 28：己方地形跨越增益点（隧道）（靠近己方梯形高地较低处）
-     * bit 29：己方地形跨越增益点（隧道）（靠近己方梯形高地较高处）
-     * bit 30：对方地形跨越增益点（隧道）（靠近对方一侧公路区下方）
-     * bit 31：对方地形跨越增益点（隧道）（靠近对方一侧公路区上方）
+     * bit 27：己方地形跨越增益点（隧道）（靠近己方一侧公路区中间）
+     * bit 28：己方地形跨越增益点（隧道）（靠近己方一侧公路区上方）
+     * bit 29：己方地形跨越增益点（隧道）（靠近己方梯形高地较低处）
+     * bit 30：对方地形跨越增益点（隧道）（靠近己方梯形高地较中间）
+     * bit 31：对方地形跨越增益点（隧道）（靠近己方梯形高地较高处）
      * 
      * 注：所有 RFID 卡仅在赛内生效。在赛外，即使检测到对应的 RFID 卡，对应值也为 0。 
      * */
     uint32_t rfid_status;
-    /*bit 0：对方地形跨越增益点（隧道）（靠近对方梯形高地较低处） 
-    * bit 1：对方地形跨越增益点（隧道）（靠近对方梯形高地较高处） */
+    /*bit 0：对方地形跨越增益点（隧道）（靠近对方公路一侧下方） 
+    * bit 1：对方地形跨越增益点（隧道）（靠近对方公路一侧中间）
+    * bit 2：对方地形跨越增益点（隧道）（靠近对方公路一侧上方）
+    * bit 3：对方地形跨越增益点（隧道）（靠近对方梯形高地较低处）
+    * bit 4：对方地形跨越增益点（隧道）（靠近对方梯形高地较中间）
+    * bit 5：对方地形跨越增益点（隧道）（靠近对方梯形高地较高处）
+    */
     uint8_t rfid_status_2;
 
 } ext_rfid_status_t;
@@ -561,7 +532,7 @@ typedef __packed struct // 0x020A
     uint8_t reserved;
 
     /*target_change_time:
-     * 切换打击目标时的比赛剩余时间，单位秒，从未切换默认为0*/
+     * 切换打击目标时的比赛剩余时间，单位秒，无/未切换动作，默认为0*/
     uint16_t target_change_time;
 
     /*operate_launch_cmd_time:
@@ -570,11 +541,13 @@ typedef __packed struct // 0x020A
 
 }ext_dart_client_cmd_t;
 
-/*场地围挡在红方补给站附近的交点为坐标原点，沿场地长边向蓝方为 X 轴正方向，沿场地短边
-向红方停机坪为 Y 轴正方向,x,y为坐标*/
+
 
 typedef __packed struct //0x020B
 {
+    /*场地围挡在红方补给站附近的交点为坐标原点，沿场地长边向蓝方为 X 轴正方向，沿场地短边
+    向红方停机坪为 Y 轴正方向,x,y为坐标*/
+
     /*机器人坐标
     * 己方英雄机器人位置 x 轴坐标，单位：m 
     * 己方英雄机器人位置 y 轴坐标，单位：m 
@@ -609,15 +582,17 @@ typedef __packed struct //0x020C
     * bit 1：对方 2 号工程机器人易伤情况 
     * bit 2：对方 3 号步兵机器人易伤情况 
     * bit 3：对方 4 号步兵机器人易伤情况 
-    * bit 4：对方哨兵机器人易伤情况 
-    * bit 5：己方 1 号英雄机器人特殊标识情况 
-    * bit 6：己方 2 号工程机器人特殊标识情况 
-    * bit 7：己方 3 号步兵机器人特殊标识情况 
-    * bit 8：己方 4 号步兵机器人特殊标识情况 
-    * bit 9：己方哨兵机器人特殊标识情况 
-    * bit 10-15：保留位 
+    * bit 4：对方空中机器人特殊标识情况
+    * bit 5：对方哨兵机器人易伤情况
+    * bit 6：己方 1 号英雄机器人特殊标识情况 
+    * bit 7：己方 2 号工程机器人特殊标识情况 
+    * bit 8：己方 3 号步兵机器人特殊标识情况 
+    * bit 9：己方 4 号步兵机器人特殊标识情况 
+    * bit 10：己方空中机器人特殊标识情况
+    * bit 11：己方哨兵机器人特殊标识情况
+    * bit 12-15：保留位 
     * 
-    * 备注：1、对方机器人：在对应机器人被标记进度≥100 时发 送 1，被标记进度<100 时发送 0。 
+    * 备注：1、对方机器人：在对应机器人被标记进度≥100 时发送 1，被标记进度<100 时发送 0。 
             2、己方机器人：在对应机器人被标记进度≥50 时发送 1，被标记进度<50 时发送 0。 
     */
     uint16_t mark_progress;
@@ -646,9 +621,11 @@ typedef __packed struct //0x020D
     uint32_t sentry_info;
 
     /*sentry_info_2:
-    * bit 12-13：哨兵当前姿态，1 为进攻姿态，2 为防御姿态，3 为移动姿态 
-    * bit 14：己方能量机关是否能够进入正在激活状态，1 为当前可激活 
-    * bit 15：保留位 
+    * bit 0：哨兵当前是否处于脱战状态，处于脱战状态时为 1，否则为 0 
+    * bit 1-11：队伍 17mm 允许发弹量的剩余可兑换数
+    * bit 12-13：哨兵当前姿态， 1为进攻姿态， 2为防御姿态， 3为移动姿态
+    * bit 14：己方能量机关是否能够进入正在激活状态， 1为当前可激活
+    * bit 15：保留位
     */
     uint16_t sentry_info_2;
 
@@ -674,7 +651,7 @@ typedef __packed struct //0x020E
 
 
 
-//机器人交互数据通过常规链路发送
+//机器人交互数据通过常规链路发送，其数据段包含一个统一的数据段头结构。
 typedef __packed struct // 0x0301
 {
     //子内容id 需为开放的子内容id
@@ -687,7 +664,7 @@ typedef __packed struct // 0x0301
     uint16_t receiver_id;
 
     //uint16_t 内容数据段 x 最大为 112
-    uint8_t user_data[113];
+    uint8_t user_data[112];
 
 } ext_robot_interaction_data_t;
 
@@ -789,41 +766,77 @@ typedef __packed struct //0x0304
 //雷达可通过常规链路向己方所有选手端发送对方机器人的坐标数据，该位置会在己方选手端小地图显示。 
 typedef __packed struct //0x0305
 {
-    /*英雄机器人 x 位置坐标，单位：cm*/
-    uint16_t hero_position_x;
+    /*对方英雄机器人 x 位置坐标，单位：cm*/
+    uint16_t opponent_hero_position_x;
 
-    /*英雄机器人 y 位置坐标，单位：cm*/
-    uint16_t hero_position_y;
+    /*对方英雄机器人 y 位置坐标，单位：cm*/
+    uint16_t opponent_hero_position_y;
 
-    /*工程机器人 x 位置坐标，单位：cm*/
-    uint16_t engineer_position_x;
+    /*对方工程机器人 x 位置坐标，单位：cm*/
+    uint16_t opponent_engineer_position_x;
 
-    /*工程机器人 y 位置坐标，单位：cm*/
-    uint16_t engineer_position_y;
+    /*对方工程机器人 y 位置坐标，单位：cm*/
+    uint16_t opponent_engineer_position_y;
 
-    /*3号步兵机器人x位置坐标，单位：cm*/
-    uint16_t infantry_3_position_x;
+    /*对方3号步兵机器人x位置坐标，单位：cm*/
+    uint16_t opponent_infantry_3_position_x;
 
-    /*3号步兵机器人y位置坐标，单位：cm*/
-    uint16_t infantry_3_position_y;
+    /*对方3号步兵机器人y位置坐标，单位：cm*/
+    uint16_t opponent_infantry_3_position_y;
 
-    /*4号步兵机器人x位置坐标，单位：cm*/
-    uint16_t infantry_4_position_x;
+    /*对方4号步兵机器人x位置坐标，单位：cm*/
+    uint16_t opponent_infantry_4_position_x;
 
-    /*4号步兵机器人y位置坐标，单位：cm*/
-    uint16_t infantry_4_position_y;
+    /*对方4号步兵机器人y位置坐标，单位：cm*/
+    uint16_t opponent_infantry_4_position_y;
 
-    /*5号步兵机器人x位置坐标，单位：cm*/
-    uint16_t infantry_5_position_x;
+    /*对方6号空中机器人x位置坐标，单位：cm*/
+    uint16_t opponent_aerial_position_x;
 
-    /*5号步兵机器人y位置坐标，单位：cm*/
-    uint16_t infantry_5_position_y;
+    /*对方6号空中机器人y位置坐标，单位：cm*/
+    uint16_t opponent_aerial_position_y;
 
-    /*哨兵机器人x位置坐标，单位：cm*/
-    uint16_t sentry_position_x;
+    /*对方哨兵机器人x位置坐标，单位：cm*/
+    uint16_t opponent_sentry_position_x;
 
-    /*哨兵机器人y位置坐标，单位：cm*/
-    uint16_t sentry_position_y;
+    /*对方哨兵机器人y位置坐标，单位：cm*/
+    uint16_t opponent_sentry_position_y;
+
+    /*己方英雄机器人 x 位置坐标，单位：cm*/
+    uint16_t ally_hero_position_x;
+
+    /*己方英雄机器人 y 位置坐标，单位：cm*/
+    uint16_t ally_hero_position_y;
+
+    /*己方工程机器人 x 位置坐标，单位：cm*/
+    uint16_t ally_engineer_position_x;
+
+    /*己方工程机器人 y 位置坐标，单位：cm*/
+    uint16_t ally_engineer_position_y;
+
+    /*己方3号步兵机器人 x 位置坐标，单位：cm*/
+    uint16_t ally_infantry_3_position_x;
+
+    /*己方3号步兵机器人 y 位置坐标，单位：cm*/
+    uint16_t ally_infantry_3_position_y;
+
+    /*己方4号步兵机器人 x 位置坐标，单位：cm*/
+    uint16_t ally_infantry_4_position_x;
+
+    /*己方4号步兵机器人 y 位置坐标，单位：cm*/
+    uint16_t ally_infantry_4_position_y;
+
+    /*己方6号空中机器人 x 位置坐标，单位：cm*/
+    uint16_t ally_aerial_position_x;
+
+    /*己方6号空中机器人 y 位置坐标，单位：cm*/
+    uint16_t ally_aerial_position_y;
+
+    /*己方哨兵机器人 x 位置坐标，单位：cm*/
+    uint16_t ally_sentry_position_x;
+
+    /*己方哨兵机器人 y 位置坐标，单位：cm*/
+    uint16_t ally_sentry_position_y;
 
     //备注：当 x、y 超出边界时显示在对应边缘处，当 x、y 均为 0 时，视为未发送此机器人坐标。 
 
@@ -925,7 +938,7 @@ typedef __packed struct //0x0309
 //机器人可通过图传链路向对应的操作手选手端连接的自定义控制器发送数据（RMUL 暂不适用）
 typedef __packed struct //0x0310
 { 
-    uint8_t data[150];
+    uint8_t data[300];
 
 }ext_robot_custom_data_2_t;
 
